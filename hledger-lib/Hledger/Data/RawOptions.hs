@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveDataTypeable #-}
+
 {-|
 
 hledger's cmdargs modes parse command-line arguments to an
@@ -26,16 +28,17 @@ module Hledger.Data.RawOptions (
 )
 where
 
-import Data.Maybe (fromMaybe, isJust, mapMaybe)
-import Data.Default (Default(..))
-import Safe (headMay, lastMay, readDef)
+import Data.Maybe
+import Data.Data
+import Data.Default
+import Safe
 
 import Hledger.Utils
 
 
 -- | The result of running cmdargs: an association list of option names to string values.
 newtype RawOpts = RawOpts { unRawOpts :: [(String,String)] }
-  deriving (Show)
+    deriving (Show, Data, Typeable)
 
 instance Default RawOpts where def = RawOpts []
 
@@ -58,7 +61,6 @@ boolopt = inRawOpts
 -- for which the given predicate returns a Just value.
 -- Useful for exclusive choice flags like --daily|--weekly|--quarterly...
 --
--- >>> import Safe (readMay)
 -- >>> choiceopt Just (RawOpts [("a",""), ("b",""), ("c","")])
 -- Just "c"
 -- >>> choiceopt (const Nothing) (RawOpts [("a","")])

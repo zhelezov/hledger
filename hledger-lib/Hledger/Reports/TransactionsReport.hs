@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards, FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards, DeriveDataTypeable, FlexibleInstances #-}
 {-|
 
 A transactions report. Like an EntriesReport, but with more

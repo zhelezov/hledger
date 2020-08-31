@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards, FlexibleInstances, ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards, DeriveDataTypeable, FlexibleInstances, ScopedTypeVariables #-}
 {-|
 
 Journal entries report, used by the print command.

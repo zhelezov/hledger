@@ -41,7 +41,6 @@ where
 --- ** imports
 import Prelude ()
 import "base-compat-batteries" Prelude.Compat hiding (fail)
-import Control.Applicative        (liftA2)
 import Control.Exception          (IOException, handle, throw)
 import Control.Monad              (liftM, unless, when)
 import Control.Monad.Except       (ExceptT, throwError)
@@ -49,13 +48,13 @@ import qualified Control.Monad.Fail as Fail
 import Control.Monad.IO.Class     (MonadIO, liftIO)
 import Control.Monad.State.Strict (StateT, get, modify', evalStateT)
 import Control.Monad.Trans.Class  (lift)
-import Data.Char                  (toLower, isDigit, isSpace, isAlphaNum, isAscii, ord)
+import Data.Char                  (toLower, isDigit, isSpace, isAlphaNum, ord)
 import Data.Bifunctor             (first)
 import "base-compat-batteries" Data.List.Compat
 import qualified Data.List.Split as LS (splitOn)
-import Data.Maybe (catMaybes, fromMaybe, isJust)
+import Data.Maybe
 import Data.MemoUgly (memo)
-import Data.Ord (comparing)
+import Data.Ord
 import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -63,17 +62,17 @@ import qualified Data.Text.Encoding as T
 import qualified Data.Text.IO as T
 import Data.Time.Calendar (Day)
 import Data.Time.Format (parseTimeM, defaultTimeLocale)
-import Safe (atMay, headMay, lastMay, readDef, readMay)
+import Safe
 import System.Directory (doesFileExist)
-import System.FilePath ((</>), takeDirectory, takeExtension, takeFileName)
+import System.FilePath
 import qualified Data.Csv as Cassava
 import qualified Data.Csv.Parser.Megaparsec as CassavaMP
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
-import Data.Foldable (asum, toList)
+import Data.Foldable
 import Text.Megaparsec hiding (match, parse)
-import Text.Megaparsec.Char (char, newline, string)
-import Text.Megaparsec.Custom (customErrorBundlePretty, parseErrorAt)
+import Text.Megaparsec.Char
+import Text.Megaparsec.Custom
 import Text.Printf (printf)
 
 import Hledger.Data
@@ -835,9 +834,10 @@ validateCsv rules numhdrlines (Right rs) = validate $ applyConditionalSkips $ dr
         Nothing -> r:(applyConditionalSkips rest)
         Just cnt -> applyConditionalSkips (drop (cnt-1) rest)
     validate [] = Right []
-    validate rs@(_first:_) = case lessthan2 of
-        Just r  -> Left $ printf "CSV record %s has less than two fields" (show r)
-        Nothing -> Right rs
+    validate rs@(_first:_)
+      | isJust lessthan2 = let r = fromJust lessthan2 in
+          Left $ printf "CSV record %s has less than two fields" (show r)
+      | otherwise        = Right rs
       where
         lessthan2 = headMay $ filter ((<2).length) rs
 
@@ -1199,13 +1199,7 @@ getEffectiveAssignment rules record f = lastMay $ map snd $ assignments
 -- | Render a field assignment's template, possibly interpolating referenced
 -- CSV field values. Outer whitespace is removed from interpolated values.
 renderTemplate ::  CsvRules -> CsvRecord -> FieldTemplate -> String
-renderTemplate rules record t = maybe t concat $ parseMaybe
-    (many $ takeWhile1P Nothing (/='%')
-        <|> replaceCsvFieldReference rules record <$> referencep)
-    t
-  where
-    referencep = liftA2 (:) (char '%') (takeWhile1P (Just "reference") isDescriptorChar) :: Parsec CustomErr String String
-    isDescriptorChar c = isAscii c && (isAlphaNum c || c == '_' || c == '-')
+renderTemplate rules record t = replaceAllBy (toRegex' "%[A-z0-9_-]+") (replaceCsvFieldReference rules record) t  -- PARTIAL: should not happen
 
 -- | Replace something that looks like a reference to a csv field ("%date" or "%1)
 -- with that field's value. If it doesn't look like a field reference, or if we

@@ -14,7 +14,7 @@ import Data.List.Extra (groupSort, groupOn)
 import Data.Maybe (fromMaybe)
 import Data.Ord (Down(..))
 import qualified Data.Map as M
-import qualified Data.Text as T
+import Data.Text (pack,unpack)
 import Safe (headMay, lookupJustDef)
 import Text.Printf
 
@@ -28,12 +28,11 @@ import Hledger.Utils
 -- deriving instance Show Account
 instance Show Account where
     show Account{..} = printf "Account %s (boring:%s, postings:%d, ebalance:%s, ibalance:%s)"
-                       (T.map colonToUnderscore aname)  -- hide : so pretty-show doesn't break line
+                       (pack $ regexReplace ":" "_" $ unpack aname)  -- hide : so pretty-show doesn't break line
                        (if aboring then "y" else "n" :: String)
                        anumpostings
                        (showMixedAmount aebalance)
                        (showMixedAmount aibalance)
-      where colonToUnderscore x = if x == ':' then '_' else x
 
 instance Eq Account where
   (==) a b = aname a == aname b -- quick equality test for speed

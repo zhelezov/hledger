@@ -61,7 +61,7 @@ import System.Environment (withArgs)
 import System.Console.CmdArgs.Explicit as C
 import Test.Tasty (defaultMain)
 
-import Hledger
+import Hledger 
 import Hledger.Cli.CliOptions
 import Hledger.Cli.Version
 import Hledger.Cli.Commands.Accounts
@@ -137,7 +137,7 @@ builtinCommands = [
 -- | The commands list, showing command names, standard aliases,
 -- and short descriptions. This is modified at runtime, as follows:
 --
--- progversion is the program name and version.
+-- PROGVERSION is replaced with the program name and version.
 --
 -- Lines beginning with a space represent builtin commands, with format:
 --  COMMAND (ALIASES) DESCRIPTION
@@ -152,10 +152,10 @@ builtinCommands = [
 --
 -- TODO: generate more of this automatically.
 -- 
-commandsList :: String -> [String] -> [String]
-commandsList progversion othercmds = [
+commandsList :: String
+commandsList = unlines [
    "-------------------------------------------------------------------------------"
-  ,progversion
+  ,"PROGVERSION"
   ,"Usage: hledger COMMAND [OPTIONS] [-- ADDONCMDOPTIONS]"
   ,"Commands (+ addons found in $PATH):"
   ,""
@@ -208,10 +208,8 @@ commandsList progversion othercmds = [
   ,"+api                      run http api server"
   ,""
   ,"Other:"
-  ] ++
-  othercmds
-  ++
-  ["Help:"
+  ,"OTHER"
+  ,"Help:"
   ," (no arguments)           show this commands list"
   ," -h                       show general flags"
   ," COMMAND -h               show flags & docs for COMMAND"
@@ -233,21 +231,25 @@ findCommand cmdname = find (elem cmdname . modeNames . fst) builtinCommands
 
 -- | Extract the command names from commandsList: the first word
 -- of lines beginning with a space or + sign.
-commandsFromCommandsList :: [String] -> [String]
+commandsFromCommandsList :: String -> [String]
 commandsFromCommandsList s =
-  [w | c:l <- s, c `elem` [' ','+'], let w:_ = words l]
+  [w | c:l <- lines s, c `elem` [' ','+'], let w:_ = words l]
 
 knownCommands :: [String]
-knownCommands = sort . commandsFromCommandsList $ commandsList prognameandversion []
+knownCommands = sort $ commandsFromCommandsList commandsList
 
 -- | Print the commands list, modifying the template above based on
 -- the currently available addons. Missing addons will be removed, and
 -- extra addons will be added under Misc.
 printCommandsList :: [String] -> IO ()
 printCommandsList addonsFound =
-    putStr . unlines . concatMap adjustline $
-    commandsList prognameandversion (map ('+':) unknownCommandsFound)
+  putStr $
+  regexReplace "PROGVERSION" (prognameandversion) $
+  regexReplace "OTHER" (unlines $ (map ('+':) unknownCommandsFound)) $
+  unlines $ concatMap adjustline $ lines $
+  cmdlist
   where
+    cmdlist = commandsList
     commandsFound = map (' ':) builtinCommandNames ++ map ('+':) addonsFound
     unknownCommandsFound = addonsFound \\ knownCommands
 

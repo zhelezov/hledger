@@ -134,10 +134,10 @@ whitespacechars = " \t\n\r"
 redirectchars   = "<>"
 
 escapeDoubleQuotes :: String -> String
-escapeDoubleQuotes = id  -- regexReplace "\"" "\""
+escapeDoubleQuotes = regexReplace "\"" "\""
 
 escapeQuotes :: String -> String
-escapeQuotes = id  -- regexReplace "([\"'])" "\\1"
+escapeQuotes = regexReplace "([\"'])" "\\1"
 
 -- | Quote-aware version of words - don't split on spaces which are inside quotes.
 -- NB correctly handles "a'b" but not "''a''". Can raise an error if parsing fails.
@@ -346,7 +346,7 @@ strWidth s = maximum $ map (foldr (\a b -> charWidth a + b) 0) $ lines s'
   where s' = stripAnsi s
 
 stripAnsi :: String -> String
-stripAnsi = regexReplace (toRegex' "\ESC\\[([0-9]+;)*([0-9]+)?[ABCDHJKfmsu]") "" -- PARTIAL: should never happen, no backreferences
+stripAnsi = regexReplace "\ESC\\[([0-9]+;)*([0-9]+)?[ABCDHJKfmsu]" ""
 
 -- | Get the designated render width of a character: 0 for a combining
 -- character, 1 for a regular character, 2 for a wide character.

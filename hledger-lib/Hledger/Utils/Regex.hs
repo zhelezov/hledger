@@ -76,6 +76,7 @@ module Hledger.Utils.Regex (
   )
 where
 
+import Control.Arrow (first)
 import Control.Monad (foldM)
 import Data.Aeson (ToJSON(..), Value(String))
 import Data.Array ((!), elems, indices)
@@ -110,19 +111,13 @@ instance Ord Regexp where
   RegexpCI _ _ `compare` Regexp _ _ = GT
 
 instance Show Regexp where
-  showsPrec d r = showParen (d > app_prec) $ reCons . showsPrec (app_prec+1) (reString r)
-    where app_prec = 10
-          reCons = case r of Regexp   _ _ -> showString "Regexp "
-                             RegexpCI _ _ -> showString "RegexpCI "
+  showsPrec d (Regexp s _)   = showString "Regexp " . showsPrec d s
+  showsPrec d (RegexpCI s _) = showString "RegexpCI " . showsPrec d s
 
 instance Read Regexp where
-  readsPrec d r =  readParen (d > app_prec) (\r -> [(toRegexCI' m,t) |
-                                                    ("RegexCI",s) <- lex r,
-                                                    (m,t) <- readsPrec (app_prec+1) s]) r
-                ++ readParen (d > app_prec) (\r -> [(toRegex' m, t) |
-                                                    ("Regex",s) <- lex r,
-                                                    (m,t) <- readsPrec (app_prec+1) s]) r
-    where app_prec = 10
+  readsPrec d ('R':'e':'g':'e':'x':'p':' ':xs)         = map (first toRegex')   $ readsPrec d xs
+  readsPrec d ('R':'e':'g':'e':'x':'p':'C':'I':' ':xs) = map (first toRegexCI') $ readsPrec d xs
+  readsPrec _ s                                        = error' $ "read: Not a valid regex " ++ s
 
 instance Data Regexp where
   toConstr _   = error' "No toConstr for Regex"
